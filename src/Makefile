@@ -1,5 +1,6 @@
 .include "../Makefile.inc"
 
+BINDIR=/usr/bin
 PROG_CXX=uvxbridge
 SRCS=main.cpp uvxlan.cpp xxhash.c config.cpp uvxcommand.cpp
 LDADD= -L../kipfw -lkipfw -L/usr/local/lib -lbotan-2 \
