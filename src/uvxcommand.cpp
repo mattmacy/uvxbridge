@@ -93,7 +93,7 @@ cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 	vxstate_t *oldstate, *newstate, *state = (vxstate_t *)arg;
 	rte_t *rte = &state->vs_dflt_rte;
 	struct timeval tnow, delta;
-	int dp_count, count = 0;
+	int dp_count;
 	uint64_t delta_total;
 	uint16_t op;
 
@@ -130,7 +130,7 @@ cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 		ck_epoch_barrier(&state->vs_record);
 		delete oldstate;
 	}
-	return (count);
+	return (1);
 }
 
 
