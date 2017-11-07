@@ -314,7 +314,7 @@ run_datapath_priv(struct nm_desc *pa, struct nm_desc *pb, pkt_dispatch_t rx_disp
 		/* poll() also cause kernel to txsync/rxsync the NICs */
 		ret = poll(pollfd, 2, timeout);
 #endif /* defined(_WIN32) || defined(BUSYWAIT) */
-		if (ret <= 0 || verbose) {
+		if (verbose) {
 			D("poll %s [0] ev %x %x rx %d@%d tx %d,"
 			  " [1] ev %x %x rx %d@%d tx %d",
 			  ret <= 0 ? "timeout" : "ok",
