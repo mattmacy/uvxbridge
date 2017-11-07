@@ -94,11 +94,13 @@ cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 	rte_t *rte = &state->vs_dflt_rte;
 	struct timeval tnow, delta;
 	int dp_count, count = 0;
+	uint64_t delta_total;
 	uint16_t op;
 
 	gettimeofday(&tnow, NULL);
 	timersub(&tnow, &state->vs_tlast, &delta);
-	if (delta.tv_sec < 1  && delta.tv_usec < 100000)
+	delta_total = delta.tv_sec * 1000000 + delta.tv_usec;
+	if (delta_total < 100000)
 		return (0);
 
 	state->vs_tlast.tv_sec = tnow.tv_sec;
