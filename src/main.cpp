@@ -97,7 +97,8 @@ datapath_thr(void *args)
 }
 
 void
-start_datapath(char *ingress, char *egress, vxstate_t *state, int idx)
+start_datapath(char *ingress, char *egress, vxstate_t *state,
+			   vxstate_t *tmp_state, int idx)
 {
 	pthread_t dp_thread;
 	dp_args_t *data_port_args;
@@ -107,8 +108,9 @@ start_datapath(char *ingress, char *egress, vxstate_t *state, int idx)
 	data_port_args = (dp_args_t *)malloc(sizeof(dp_args_t));
 	dta = (struct dp_thr_args *)malloc(sizeof(*dta));
 	bzero(data_port_args, sizeof(dp_args_t));
-	data_state = new vxstate_dp_t(idx, state);
-	state->vs_dp_states[idx] = data_state;
+	data_state = new vxstate_dp_t(idx, tmp_state);
+	tmp_state->vs_dp_states[idx] = state->vs_dp_states[idx] =
+		data_state;
 	dta->self_state = data_state;
 	dta->config_state = state;
 	dta->port_args = data_port_args;
@@ -139,7 +141,7 @@ main(int argc, char *const argv[])
 	char *ingress, *egress, *config, *log;
 	uint32_t icount, ecount;
 	uint64_t pmac, cmac, hwmac;
-	vxstate_t *state;
+	vxstate_t *state, *tmp_state;
 	dp_args_t cmd_port_args;
 
 	ingress = egress = config = NULL;
@@ -219,8 +221,9 @@ main(int argc, char *const argv[])
 	} else if (test == 2) {
 		configure_beastie1(state);
 	}
+	tmp_state = new vxstate_t(*state);
 	for (uint32_t i = 0; i < icount; i++)
-		start_datapath(ingress, egress, state, i);
+		start_datapath(ingress, egress, state, tmp_state, i);
 	if (config == NULL) {
 		while (1)
 			sleep(1);
