@@ -255,6 +255,7 @@ typedef struct vxlan_state {
 		vs_prov_mac(pmac),
 		vs_ctrl_mac(cmac),
 		vs_intf_mac(hwmac) {
+		bzero(&this->vs_dflt_rte, sizeof(struct routeinfo));
 		this->vs_nm_ingress = this->vs_nm_egress = NULL;
 		this->vs_tlast.tv_sec = this->vs_tlast.tv_usec = 0;
 		this->vs_seed = arc4random();
