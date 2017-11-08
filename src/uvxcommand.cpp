@@ -240,7 +240,7 @@ cmd_dispatch_config(char *rxbuf, char *txbuf, path_state_t *ps, void *arg)
 {
 	vxstate_t *state = (vxstate_t *)arg;
 	struct uvxcmd_header *uh = (struct uvxcmd_header *)(rxbuf + sizeof(struct ether_header));
-	caddr_t rxdata = (caddr_t)(uh + 1);
+	void *rxdata = (caddr_t)(uh + 1);
 	caddr_t txdata = txbuf + sizeof(struct ether_header) + sizeof(struct uvxcmd_header);	
 	uint64_t mac;
 	uint16_t size, rc, op;

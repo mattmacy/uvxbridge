@@ -62,7 +62,8 @@ static int vxlan_encap(char *rxbuf, char *txbuf, path_state_t *ps,
 void
 data_send_cmd(uint64_t targetha, uint32_t targetip, uint16_t op, vxstate_t *state)
 {
-	char *txbuf, *data;
+	char *txbuf;
+	void *data;
 	path_state_t ps;
 	int len;
 
@@ -305,7 +306,7 @@ tun_encrypt(char *txbuf, std::shared_ptr<Botan::BlockCipher> &cipher, vxstate_t 
 	uint32_t timestamp;
 
 	timestamp = state->vs_timestamp;
-	ip = (struct ip *)(txbuf + sizeof(struct ether_header));
+	ip = (struct ip *)(void *)(txbuf + sizeof(struct ether_header));
 	uh = (struct udphdr *)(ip + 1);
 	data = (uint8_t *)(uh + 1);
 	vh = (struct vxlanhdr *)data;
@@ -484,7 +485,6 @@ vxlan_decap_v4(char *rxbuf, char *txbuf, path_state_t *ps,
 			   vxstate_dp_t *dp_state)
 {
 	struct vxlan_header *vh = (struct vxlan_header *)rxbuf;
-	struct ip *ip = &vh->vh_iphdr;
 	uint32_t rxvxlanid = vh->vh_vxlanhdr.v_vxlanid;
 	struct ether_header *eh = (struct ether_header *)(rxbuf + sizeof(*vh));
 	uint64_t dmac = mactou64(eh->ether_dhost);
@@ -531,7 +531,7 @@ static int
 tun_decrypt_v4(char *rxbuf, char *txbuf, path_state_t *ps,
 				vxstate_dp_t *dp_state)
 {
-	struct ip *ip = (struct ip *)(rxbuf + sizeof(struct ether_header));
+	struct ip *ip = (struct ip *)(void *)(rxbuf + sizeof(struct ether_header));
 	struct udphdr *uh = (struct udphdr *)(ip + 1);
 	uint8_t *data = (uint8_t *)(uh + 1);
 	struct vxlanhdr *vh = (struct vxlanhdr *)data;
