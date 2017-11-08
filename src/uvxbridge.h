@@ -252,16 +252,23 @@ typedef struct vxlan_state {
 	struct vxlan_state_dp *vs_dp_states[NM_PORT_MAX];
 
 	vxlan_state(uint64_t pmac, uint64_t cmac, uint64_t hwmac) :
+		vs_mtu(1488),
+		vs_mtu_blocks(93),
+		vs_timestamp(0),
 		vs_prov_mac(pmac),
 		vs_ctrl_mac(cmac),
-		vs_intf_mac(hwmac) {
+		vs_intf_mac(hwmac),
+		vs_nm_ingress(NULL),
+		vs_nm_egress(NULL),
+		vs_datapath_count(0) {
 		bzero(&this->vs_dflt_rte, sizeof(struct routeinfo));
-		this->vs_nm_ingress = this->vs_nm_egress = NULL;
+		bzero(&this->vs_record, sizeof(ck_epoch_record_t));
+		for (int i = 0; i < NM_PORT_MAX; i++)
+			vs_dp_states[i] = NULL;
 		this->vs_tlast.tv_sec = this->vs_tlast.tv_usec = 0;
 		this->vs_seed = arc4random();
 		this->vs_min_port = IPPORT_HIFIRSTAUTO;	/* 49152 */
 		this->vs_max_port = IPPORT_HILASTAUTO;	/* 65535 */
-		this->vs_datapath_count = 0;
 	}
 } vxstate_t;
 
