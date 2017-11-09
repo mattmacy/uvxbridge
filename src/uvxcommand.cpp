@@ -54,7 +54,7 @@ void
 uvxcmd_fill(char *txbuf, uint64_t smac, uint64_t dmac, uint16_t op, uint16_t rc, uint16_t seqno)
 {
 	struct ether_header *eh = (struct ether_header *)txbuf;
-	struct uvxcmd_header *uh = (struct uvxcmd_header *)(eh + 1);
+	struct uvxcmd_header *uh = (struct uvxcmd_header *)(void *)(eh + 1);
 
 	eh_fill(eh, smac, dmac, ETHERTYPE_UVXCONF);
 	uh->uh_magic = UVXMAGIC;
@@ -100,6 +100,8 @@ cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 	gettimeofday(&tnow, NULL);
 	timersub(&tnow, &state->vs_tlast, &delta);
 	delta_total = delta.tv_sec * 1000000 + delta.tv_usec;
+	if (delta_total < 1000000 && debug)
+		return (0);
 	if (delta_total < 100000)
 		return (0);
 
@@ -107,8 +109,11 @@ cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 	state->vs_tlast.tv_usec = tnow.tv_usec;
 	state->vs_timestamp = tnow.tv_sec * 10 + tnow.tv_usec / 10000;
 
-	op = (rte->ri_flags & RI_VALID) ? CMD_HEARTBEAT : CMD_ROUTE_QUERY;
-	uvxcmd_fill(txbuf, state->vs_ctrl_mac, state->vs_prov_mac, op, 0, 0);
+	if (debug)
+		printf("periodic config: rteinfo: laddr %08x raddr %08x mask %08x flags %016lx\n",
+			   rte->ri_laddr.in4.s_addr, rte->ri_raddr.in4.s_addr,
+			   rte->ri_mask.in4.s_addr, rte->ri_flags);
+
 
 	if (state->vs_dflt_rte.ri_flags & RI_DO_GRAT) {
 		/* need to do periodically */
@@ -239,9 +244,9 @@ int
 cmd_dispatch_config(char *rxbuf, char *txbuf, path_state_t *ps, void *arg)
 {
 	vxstate_t *state = (vxstate_t *)arg;
-	struct uvxcmd_header *uh = (struct uvxcmd_header *)(rxbuf + sizeof(struct ether_header));
+	struct uvxcmd_header *uh = (struct uvxcmd_header *)(void*)(rxbuf + sizeof(struct ether_header));
 	void *rxdata = (caddr_t)(uh + 1);
-	caddr_t txdata = txbuf + sizeof(struct ether_header) + sizeof(struct uvxcmd_header);	
+	void *txdata = txbuf + sizeof(struct ether_header) + sizeof(struct uvxcmd_header);
 	uint64_t mac;
 	uint16_t size, rc, op;
 
@@ -476,7 +481,7 @@ cmd_dispatch_config(char *rxbuf, char *txbuf, path_state_t *ps, void *arg)
 			break;
 		case CMD_IPFW: {
 			struct ipfw_wire_hdr *ipfw = (struct ipfw_wire_hdr *)rxdata;
-			size = cmd_dispatch_ipfw(ipfw, txdata, state);
+			size = cmd_dispatch_ipfw(ipfw, (caddr_t)txdata, state);
 			rc = ntohl(ipfw->level);
 			op = CMD_IPFW;
 		}

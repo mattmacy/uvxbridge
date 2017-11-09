@@ -97,7 +97,6 @@ static inline const char *xyz(const char *s) {
 		(int)(t.tv_sec % 1000), (int)(t.tv_usec), s);
 	return buf;
 }
-
 #define ND(fmt, ...) do {} while (0)
 #define D1(fmt, ...) do {} while (0)
 #define D(fmt, ...) fprintf(stderr, "%s:%-10s [%d] " fmt "\n",      	\
@@ -121,7 +120,6 @@ static inline const char *xyz(const char *s) {
 #define DX(lev, fmt, ...) do {              \
         if (dn_cfg.debug > lev) D(fmt, ## __VA_ARGS__); } while (0)
 /* end debugging macros */
-
 
 /*
  * sbin/ipfw on non-freebsd platform
@@ -243,6 +241,7 @@ struct  sockopt {
  * if not available we will use our own enum.
  * The TABLE_BASE value is used in the kernel.
  */
+#ifndef __FreeBSD__
 #define _IPFW_SOCKOPT_BASE	100	/* 40 on freebsd */
 #define	IP_FW_TABLE_ADD		(_IPFW_SOCKOPT_BASE +   0)
 #define	IP_FW_TABLE_DEL		(_IPFW_SOCKOPT_BASE +   1)
@@ -272,6 +271,7 @@ struct  sockopt {
         /* 63 is missing */
 #define	IP_DUMMYNET_GET         (_IPFW_SOCKOPT_BASE + 24)
 #define	_IPFW_SOCKOPT_END	(_IPFW_SOCKOPT_BASE + 25)
+#endif
 
 /*
  * Part 3: userland stuff for linux/windows
