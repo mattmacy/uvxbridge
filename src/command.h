@@ -34,72 +34,110 @@
 #define UVX_KEYSIZE 32
 
 struct uvxcmd_header {
+	/* arbitrary sequence number echoed in reply */
 	uint16_t uh_seqno;
+	/* operation code */
 	uint16_t uh_op;
+	/* return code -- only used in response */
 	uint16_t uh_rc;
+	/* magic value -- identifies proper command  */
 	uint32_t uh_magic;
 };
 
 struct arp_request {
+	/* protocol address */
 	uint32_t ar_pa;
 };
 
 struct arp_reply {
+	/* protocol address */
 	uint32_t ar_pa;
+	/* hardware  address */
 	uint8_t ar_ha[ETHER_ADDR_LEN];
 };
 
 struct vx_arp_request {
+	/* protocol address */
 	uint32_t var_pa;
+	/* guest vxlanid */
 	uint32_t var_vxlanid;
 };
 
 struct vx_arp_reply {
+	/* protocol address */
 	uint32_t var_pa;
+	/* guest vxlanid */
 	uint32_t var_vxlanid;
+	/* hardware address */
 	uint8_t var_ha[ETHER_ADDR_LEN];
 };
 
+/* forwarding table entry request */
 struct fte_request {
+	/* guest vxlanid */
 	uint32_t fr_vxlanid;
+	/* destination hardware address */
 	uint8_t fr_ha[ETHER_ADDR_LEN];
 };
 
+/* forwarding table entry reply */
 struct fte_reply {
+	/* destination protocol address */
 	uint32_t fr_pa;
+	/* guest vxlanid */
 	uint32_t fr_vxlanid;
+	/* destination hardware address */
 	uint8_t fr_ha[ETHER_ADDR_LEN];
 };
 
+/* guest interface request */
 struct vm_intf_request {
+	/* guest interface hardware address */
 	uint8_t vir_ha[ETHER_ADDR_LEN];
 };
 
+/* guest interface reply */
 struct vm_intf_reply {
+	/* guest interface vlanid */
 	uint16_t vir_vlanid;
+	/* guest interface vxlanid */
 	uint32_t vir_vxlanid;
+	/* guest interface hardware address */
 	uint8_t	vir_ha[ETHER_ADDR_LEN];
+	/* guest interface flags (firewall/encryption) */
 	uint32_t vir_flags;
 };
 
+/* configure client encrypted tunnel */
 struct tun_configure_client {
+	/* peer protocol address */
 	struct in_addr tcc_pa;
+	/* peer preshared key */
 	uint8_t tcc_psk[UVX_KEYSIZE];
 };
 
+/* configure uvxbridge preshared key */
 struct tun_configure_server {
 	uint8_t tcs_psk[UVX_KEYSIZE];
 };
 
+/* query peer preshared key value */
 struct tun_query {
+	/* peer protocol address */
 	struct in_addr tq_pa;
+	/* peer preshared key */
 	uint8_t tq_psk[UVX_KEYSIZE];
 };
 
+/* configure uvxbridge route */
 struct route_configure {
+	/* local protocol address */
 	uint32_t rc_lpa;
+	/* remote protocol address (gateway) */
 	uint32_t rc_rpa;
+	/* mask prefix length */
 	uint16_t rc_prefixlen;
+	/* configuration flags (currently unused) */
 	uint16_t rc_flags;
 };
 
