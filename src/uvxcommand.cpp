@@ -54,7 +54,7 @@ void
 uvxcmd_fill(char *txbuf, uint64_t smac, uint64_t dmac, uint16_t op, uint16_t rc, uint16_t seqno)
 {
 	struct ether_header *eh = (struct ether_header *)txbuf;
-	struct uvxcmd_header *uh = (struct uvxcmd_header *)(eh + 1);
+	struct uvxcmd_header *uh = (struct uvxcmd_header *)(void *)(eh + 1);
 
 	eh_fill(eh, smac, dmac, ETHERTYPE_UVXCONF);
 	uh->uh_magic = UVXMAGIC;
@@ -244,9 +244,9 @@ int
 cmd_dispatch_config(char *rxbuf, char *txbuf, path_state_t *ps, void *arg)
 {
 	vxstate_t *state = (vxstate_t *)arg;
-	struct uvxcmd_header *uh = (struct uvxcmd_header *)(rxbuf + sizeof(struct ether_header));
+	struct uvxcmd_header *uh = (struct uvxcmd_header *)(void*)(rxbuf + sizeof(struct ether_header));
 	void *rxdata = (caddr_t)(uh + 1);
-	caddr_t txdata = txbuf + sizeof(struct ether_header) + sizeof(struct uvxcmd_header);	
+	void *txdata = txbuf + sizeof(struct ether_header) + sizeof(struct uvxcmd_header);
 	uint64_t mac;
 	uint16_t size, rc, op;
 
@@ -481,7 +481,7 @@ cmd_dispatch_config(char *rxbuf, char *txbuf, path_state_t *ps, void *arg)
 			break;
 		case CMD_IPFW: {
 			struct ipfw_wire_hdr *ipfw = (struct ipfw_wire_hdr *)rxdata;
-			size = cmd_dispatch_ipfw(ipfw, txdata, state);
+			size = cmd_dispatch_ipfw(ipfw, (caddr_t)txdata, state);
 			rc = ntohl(ipfw->level);
 			op = CMD_IPFW;
 		}
