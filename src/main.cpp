@@ -142,6 +142,7 @@ main(int argc, char *const argv[])
 	uint32_t icount, ecount;
 	uint64_t pmac, cmac, hwmac;
 	vxstate_t *state, *tmp_state;
+	rte_t *r;
 	dp_args_t cmd_port_args;
 
 	ingress = egress = config = NULL;
@@ -215,6 +216,10 @@ main(int argc, char *const argv[])
 	/* do any global datapath init first */
 	nmdp_init();
 	state = new vxstate_t(pmac, cmac, hwmac);
+	r = &state->vs_dflt_rte;
+	printf("config: rteinfo: laddr %08x raddr %08x mask %08x flags %016lx\n",
+		   r->ri_laddr.in4.s_addr, r->ri_raddr.in4.s_addr,
+		   r->ri_mask.in4.s_addr, r->ri_flags);
 	ck_epoch_register(nmdp_epoch_get(), &state->vs_record, NULL);
 	if (test == 1) {
 		configure_beastie0(state);
@@ -222,6 +227,10 @@ main(int argc, char *const argv[])
 		configure_beastie1(state);
 	}
 	tmp_state = new vxstate_t(*state);
+	r = &tmp_state->vs_dflt_rte;
+	printf("tmp: rteinfo: laddr %08x raddr %08x mask %08x flags %016lx\n",
+		   r->ri_laddr.in4.s_addr, r->ri_raddr.in4.s_addr,
+		   r->ri_mask.in4.s_addr, r->ri_flags);
 	for (uint32_t i = 0; i < icount; i++)
 		start_datapath(ingress, egress, state, tmp_state, i);
 	if (config == NULL) {

@@ -100,6 +100,8 @@ cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 	gettimeofday(&tnow, NULL);
 	timersub(&tnow, &state->vs_tlast, &delta);
 	delta_total = delta.tv_sec * 1000000 + delta.tv_usec;
+	if (delta_total < 1000000 && debug)
+		return (0);
 	if (delta_total < 100000)
 		return (0);
 
@@ -107,8 +109,11 @@ cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 	state->vs_tlast.tv_usec = tnow.tv_usec;
 	state->vs_timestamp = tnow.tv_sec * 10 + tnow.tv_usec / 10000;
 
-	op = (rte->ri_flags & RI_VALID) ? CMD_HEARTBEAT : CMD_ROUTE_QUERY;
-	uvxcmd_fill(txbuf, state->vs_ctrl_mac, state->vs_prov_mac, op, 0, 0);
+	if (debug)
+		printf("periodic config: rteinfo: laddr %08x raddr %08x mask %08x flags %016lx\n",
+			   rte->ri_laddr.in4.s_addr, rte->ri_raddr.in4.s_addr,
+			   rte->ri_mask.in4.s_addr, rte->ri_flags);
+
 
 	if (state->vs_dflt_rte.ri_flags & RI_DO_GRAT) {
 		/* need to do periodically */
