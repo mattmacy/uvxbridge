@@ -87,6 +87,14 @@ cmd_send_arp_phys(char *rxbuf, char *txbuf, vxstate_t *state, int gratuitous)
 	u64tomac(state->vs_intf_mac, dae->ae_tha);
 }
 
+static void
+uvxstat_fill(struct uvxstat_aggr *stat, vxstate_t *state)
+{
+	/* XXX -- only supports one datapath */
+	if (state->vs_datapath_count)
+		memcpy(stat, &state->vs_dp_states[0]->vsd_stats, sizeof(*stat));
+}
+
 int
 cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 {
@@ -123,6 +131,10 @@ cmd_initiate(char *rxbuf __unused, char *txbuf, path_state_t *ps, void *arg)
 	} else {
 		op = (rte->ri_flags & RI_VALID) ? CMD_HEARTBEAT : CMD_ROUTE_QUERY;
 		uvxcmd_fill(txbuf, state->vs_ctrl_mac, state->vs_prov_mac, op, 0, 0);
+		if (op == CMD_HEARTBEAT) {
+			struct uvxstat_aggr *ua = (struct uvxstat_aggr *)(void *)(txbuf + ETHER_HDR_LEN + sizeof(uvxcmd_header));
+			uvxstat_fill(ua, state);
+		}
 	}
 
 	/* update all datapath threads with a copy of the latest state */

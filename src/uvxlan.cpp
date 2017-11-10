@@ -132,14 +132,6 @@ data_send_arp_phys(char *rxbuf, char *txbuf, path_state_t *ps, vxstate_t *state,
 	*(ps->ps_tx_len) = 60;
 }
 
-static void
-uvxstat_fill(struct uvxstat *stat, vxstate_t *state)
-{
-	/* XXX -- only supports one datapath */
-	if (state->vs_datapath_count)
-		memcpy(stat, &state->vs_dp_states[0]->vsd_stats, sizeof(*stat));
-}
-
 /*
  * Respond to queries for our encapsulating IP
  */
@@ -577,8 +569,10 @@ static int
 ingress_dispatch(char *rxbuf, char *txbuf, path_state_t *ps, vxstate_dp_t *state)
 {
 	struct ether_vlan_header *evh;
-	int etype;
+	struct uvxstat *s = &state->vsd_stats.ua_ingress;
+	int etype, rc;
 
+	rc = 0;
 	evh = (struct ether_vlan_header *)(rxbuf);
 	if (evh->evl_encap_proto == htons(ETHERTYPE_VLAN))
 		etype = ntohs(evh->evl_proto);
@@ -587,51 +581,36 @@ ingress_dispatch(char *rxbuf, char *txbuf, path_state_t *ps, vxstate_dp_t *state
 
 	switch (etype) {
 		case ETHERTYPE_ARP:
-			if (ps->ps_rx_len > 0) {
-				state->vsd_stats.uvx_ingress_rx_pkt++;
-				state->vsd_stats.uvx_ingress_rx_bytes += ps->ps_rx_len;
-			}
-			if (*(ps->ps_tx_len) > 0) {
-				state->vsd_stats.uvx_ingress_tx_pkt++;
-				state->vsd_stats.uvx_ingress_tx_bytes += *(ps->ps_tx_len);
-			}
-			return data_dispatch_arp_phys(rxbuf, txbuf, ps, state);
+			rc = data_dispatch_arp_phys(rxbuf, txbuf, ps, state);
 			break;
 		case ETHERTYPE_IP:
-			if (ps->ps_rx_len > 0) {
-				state->vsd_stats.uvx_ingress_rx_pkt++;
-				state->vsd_stats.uvx_ingress_rx_bytes += ps->ps_rx_len;
-			}
-			if (*(ps->ps_tx_len) > 0) {
-				state->vsd_stats.uvx_ingress_tx_pkt++;
-				state->vsd_stats.uvx_ingress_tx_bytes += *(ps->ps_tx_len);
-			}
-			return udp_ingress(rxbuf, txbuf, ps, state);
+			rc = udp_ingress(rxbuf, txbuf, ps, state);
 			break;
 		case ETHERTYPE_IPV6:
 			/* V6 not currently supported on the underlay */
 			break;
 		default:
-			if (ps->ps_rx_len > 0) {
-				state->vsd_stats.uvx_ingress_rx_invl_pkt++;
-				state->vsd_stats.uvx_ingress_rx_invl_bytes += ps->ps_rx_len;
-			}
-			if (*(ps->ps_tx_len) > 0) {
-				state->vsd_stats.uvx_ingress_tx_invl_pkt++;
-				state->vsd_stats.uvx_ingress_tx_invl_bytes += *(ps->ps_tx_len);
-			}
 			printf("%s unrecognized packet type %x len: %d\n", __func__, etype, ps->ps_rx_len);
 			break;
 	}
-	return (0);
+	if (rc) {
+		s->uvx_pkt++;
+		s->uvx_bytes += ps->ps_rx_len;
+	} else {
+		s->uvx_invl_pkt++;
+		s->uvx_invl_bytes += ps->ps_rx_len;
+	}
+	return (rc);
 }
 
 static int
 egress_dispatch(char *rxbuf, char *txbuf, path_state_t *ps, vxstate_dp_t *state)
 {
 	struct ether_vlan_header *evh;
-	int etype;
+	struct uvxstat *s = &state->vsd_stats.ua_egress;
+	int etype, rc;
 
+	rc = 0;
 	evh = (struct ether_vlan_header *)(rxbuf);
 	if (evh->evl_encap_proto == htons(ETHERTYPE_VLAN))
 		etype = ntohs(evh->evl_proto);
@@ -640,64 +619,38 @@ egress_dispatch(char *rxbuf, char *txbuf, path_state_t *ps, vxstate_dp_t *state)
 
 	switch (etype) {
 		case ETHERTYPE_ARP:
-			if (ps->ps_rx_len > 0) {
-				state->vsd_stats.uvx_egress_rx_pkt++;
-				state->vsd_stats.uvx_egress_rx_bytes += ps->ps_rx_len;
-			}
-			if (*(ps->ps_tx_len) > 0) {
-				state->vsd_stats.uvx_egress_tx_pkt++;
-				state->vsd_stats.uvx_egress_tx_bytes += *(ps->ps_tx_len);
-			}
-			data_dispatch_arp_vx(rxbuf, txbuf, ps, state);
+			rc = data_dispatch_arp_vx(rxbuf, txbuf, ps, state);
 			break;
 		case ETHERTYPE_IP:
 		case ETHERTYPE_IPV6:
-			if (ps->ps_rx_len > 0) {
-				state->vsd_stats.uvx_egress_rx_pkt++;
-				state->vsd_stats.uvx_egress_rx_bytes += ps->ps_rx_len;
-			}
-			if (*(ps->ps_tx_len) > 0) {
-				state->vsd_stats.uvx_egress_tx_pkt++;
-				state->vsd_stats.uvx_egress_tx_bytes += *(ps->ps_tx_len);
-			}
-			return vxlan_encap(rxbuf, txbuf, ps, state);
+			rc = vxlan_encap(rxbuf, txbuf, ps, state);
 			break;
 		default:
-			if (ps->ps_rx_len > 0) {
-				state->vsd_stats.uvx_egress_rx_invl_pkt++;
-				state->vsd_stats.uvx_egress_rx_invl_bytes += ps->ps_rx_len;
-			}
-			if (*(ps->ps_tx_len) > 0) {
-				state->vsd_stats.uvx_egress_tx_invl_pkt++;
-				state->vsd_stats.uvx_egress_tx_invl_bytes += *(ps->ps_tx_len);
-			}
 			printf("%s unrecognized packet type %x len: %d\n", __func__, etype, ps->ps_rx_len);
 			break;
 	}
-	return (0);
+	if (rc) {
+		s->uvx_pkt++;
+		s->uvx_bytes += ps->ps_rx_len;
+	} else {
+		s->uvx_invl_pkt++;
+		s->uvx_invl_bytes += ps->ps_rx_len;
+	}
+	return (rc);
 }
 
 static void
 print_stats(vxstate_dp_t *state)
 {
-	printf("egress rx\ttx\t\t\tinvalid rx\ttx\n");
-	printf("%zu (%zu bytes)\t", state->vsd_stats.uvx_egress_rx_pkt,
-			state->vsd_stats.uvx_egress_rx_bytes);
-	printf("%zu (%zu bytes)\t\t", state->vsd_stats.uvx_egress_tx_pkt,
-			state->vsd_stats.uvx_egress_tx_bytes);
-	printf("%zu (%zu bytes)\t", state->vsd_stats.uvx_egress_rx_invl_pkt,
-			state->vsd_stats.uvx_egress_rx_invl_bytes);
-	printf("%zu (%zu bytes)\n", state->vsd_stats.uvx_egress_tx_invl_pkt,
-			state->vsd_stats.uvx_egress_tx_invl_bytes);
-	printf("ingress rx\ttx\t\t\tinvalid rx\ttx\n");
-	printf("%zu (%zu bytes)\t", state->vsd_stats.uvx_ingress_rx_pkt,
-			state->vsd_stats.uvx_ingress_rx_bytes);
-	printf("%zu (%zu bytes)\t\t", state->vsd_stats.uvx_ingress_tx_pkt,
-			state->vsd_stats.uvx_ingress_tx_bytes);
-	printf("%zu (%zu bytes)\t", state->vsd_stats.uvx_ingress_rx_invl_pkt,
-			state->vsd_stats.uvx_ingress_rx_invl_bytes);
-	printf("%zu (%zu bytes)\n", state->vsd_stats.uvx_ingress_tx_invl_pkt,
-			state->vsd_stats.uvx_ingress_tx_invl_bytes);
+	struct uvxstat *se = &state->vsd_stats.ua_egress;
+	struct uvxstat *si = &state->vsd_stats.ua_ingress;
+
+	printf("egress \t\t\t\tinvalid\n");
+	printf("%zu (%zu bytes)\t", se->uvx_pkt, se->uvx_bytes);
+	printf("%zu (%zu bytes)\n", se->uvx_invl_pkt, se->uvx_invl_bytes);
+	printf("ingress \t\t\t\tinvalid\n");
+	printf("%zu (%zu bytes)\t", si->uvx_pkt, si->uvx_bytes);
+	printf("%zu (%zu bytes)\n", si->uvx_invl_pkt, si->uvx_invl_bytes);
 }
 
 int

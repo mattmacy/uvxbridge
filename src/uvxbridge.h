@@ -151,22 +151,15 @@ typedef unordered_map<uint32_t, ftable_t> ftablemap_t;
 extern volatile sig_atomic_t info;
 
 struct uvxstat {
-	uint64_t uvx_egress_rx_pkt;
-	uint64_t uvx_egress_tx_pkt;
-	uint64_t uvx_egress_rx_bytes;
-	uint64_t uvx_egress_tx_bytes;
-	uint64_t uvx_egress_rx_invl_pkt;
-	uint64_t uvx_egress_tx_invl_pkt;
-	uint64_t uvx_egress_rx_invl_bytes;
-	uint64_t uvx_egress_tx_invl_bytes;
-	uint64_t uvx_ingress_rx_pkt;
-	uint64_t uvx_ingress_tx_pkt;
-	uint64_t uvx_ingress_rx_bytes;
-	uint64_t uvx_ingress_tx_bytes;
-	uint64_t uvx_ingress_rx_invl_pkt;
-	uint64_t uvx_ingress_tx_invl_pkt;
-	uint64_t uvx_ingress_rx_invl_bytes;
-	uint64_t uvx_ingress_tx_invl_bytes;
+	uint64_t uvx_pkt;
+	uint64_t uvx_bytes;
+	uint64_t uvx_invl_pkt;
+	uint64_t uvx_invl_bytes;
+};
+
+struct uvxstat_aggr {
+	struct uvxstat ua_egress;
+	struct uvxstat ua_ingress;
 };
 
 #define EC_VLAN 0x01
@@ -293,7 +286,7 @@ typedef struct vxlan_state_dp {
 	struct egress_cache vsd_ecache;
 
 	/* statistics */
-	struct uvxstat vsd_stats;
+	struct uvxstat_aggr vsd_stats;
 
 	/* if data path - our identifier */
 	uint32_t vsd_datapath_id;
